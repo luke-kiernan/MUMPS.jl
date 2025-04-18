@@ -30,7 +30,6 @@ MUMPS has to offer.
 module MUMPS
 
 using Libdl, LinearAlgebra, SparseArrays
-using MPI
 
 if haskey(ENV, "JULIA_MUMPS_LIBRARY_PATH")
   @info("Custom Installation")
@@ -40,7 +39,17 @@ if haskey(ENV, "JULIA_MUMPS_LIBRARY_PATH")
   const libzmumpspar = joinpath(ENV["JULIA_MUMPS_LIBRARY_PATH"], "libzmumps.$dlext")
   const MUMPS_INSTALLATION = "CUSTOM"
 else
-  using MUMPS_jll
+  if Sys.iswindows()
+    using MUMPS_seq_jll # or MUMPS_seq_MKL_jll
+    # but what about Int64's, for which i suspect should use libsmumps64?
+    const libsmumpspar = libsmumps
+    const libdmumpspar = libdmumps
+    const libcmumpspar = libcmumps
+    const libzmumpspar = libzmumps
+  else
+    using MUMPS_jll
+    using MPI
+  end
   const MUMPS_INSTALLATION = "YGGDRASIL"
 end
 

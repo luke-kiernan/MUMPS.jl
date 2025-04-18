@@ -26,7 +26,7 @@ for (fname, lname, elty, subty) in (
 )
   @eval begin
     function invoke_mumps_unsafe!(mumps::Mumps{$elty, $subty})
-      MPI.Initialized() ||
+      Sys.iswindows() || MPI.Initialized() ||
         throw(MUMPSException("must call MPI.Init() exactly once before calling mumps"))
       ccall(($fname, $lname), Cvoid, (Ref{Mumps{$elty, $subty}},), mumps)
       mumps.err = mumps.infog[1]

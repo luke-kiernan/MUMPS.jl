@@ -1,7 +1,9 @@
 using Test
 using Random
 using LinearAlgebra
-using MPI
+if !Sys.iswindows()
+  using MPI
+end
 using MUMPS
 using MUMPS: get_sol!
 using SparseArrays
@@ -25,8 +27,10 @@ include("get_div_grad.jl")
 root = 0
 
 # Initialize MPI.
-MPI.Init()
-comm = MPI.COMM_WORLD
+if !Sys.iswindows()
+  MPI.Init()
+  comm = MPI.COMM_WORLD
+end
 
 @testset "float: " begin
   include("mumps_test_float.jl")
@@ -47,5 +51,5 @@ end
   include("mumps_test_save.jl")
 end
 
-MPI.Barrier(comm)
-MPI.Finalize()
+Sys.iswindows() || MPI.Barrier(comm)
+Sys.iswindows() || MPI.Finalize()
