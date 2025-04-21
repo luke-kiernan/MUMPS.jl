@@ -1,11 +1,11 @@
 using Test
 using Random
 using LinearAlgebra
-if !Sys.iswindows()
-  using MPI
-end
 using MUMPS
 using MUMPS: get_sol!
+if !USE_SEQ
+  using MPI
+end
 using SparseArrays
 
 Random.seed!(666)  # Random tests are diabolical
@@ -27,7 +27,7 @@ include("get_div_grad.jl")
 root = 0
 
 # Initialize MPI.
-if !Sys.iswindows()
+if !USE_SEQ
   MPI.Init()
   comm = MPI.COMM_WORLD
 end
@@ -51,5 +51,5 @@ end
   include("mumps_test_save.jl")
 end
 
-Sys.iswindows() || MPI.Barrier(comm)
-Sys.iswindows() || MPI.Finalize()
+USE_SEQ || MPI.Barrier(comm)
+USE_SEQ || MPI.Finalize()

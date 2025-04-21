@@ -11,7 +11,7 @@ factorize!(mumps1, A);  # Analyze and factorize.
 rhs = [1.0, 4.0, 9.0, 16.0]
 x = solve(mumps1, rhs)
 finalize(mumps1)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 @test(norm(A * x - rhs) <= tol * norm(rhs) * norm(A, 1))
 
 mumps1_unsafe = Mumps{ComplexF32}(mumps_definite, icntl, default_cntl32);
@@ -25,7 +25,7 @@ solve!(mumps1_unsafe)
 x = similar(orig_rhs)
 get_sol!(x, mumps1_unsafe)
 finalize(mumps1_unsafe)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 @test(norm(A * x - orig_rhs) <= tol * norm(orig_rhs) * norm(A, 1))
 
 mumps2 = Mumps{ComplexF32}(mumps_unsymmetric, icntl, default_cntl32)
@@ -35,7 +35,7 @@ factorize!(mumps2, A)
 rhs = [1.0, 4.0, 9.0, 16.0]
 x = solve(mumps2, rhs)
 finalize(mumps2)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 @test(norm(A * x - rhs) <= tol * norm(rhs) * norm(A, 1))
 
 mumps3 = Mumps{ComplexF32}(mumps_unsymmetric, icntl, default_cntl32)
@@ -44,7 +44,7 @@ factorize!(mumps3, A)
 rhs = map(ComplexF32, [1.0, 4.0, 9.0, 16.0] + im * [1.0, 4.0, 9.0, 16.0])
 x = solve(mumps3, rhs)
 finalize(mumps3)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 @test(norm(A * x - rhs) <= tol * norm(rhs) * norm(A, 1))
 
 mumps3_unsafe = Mumps{ComplexF32}(mumps_unsymmetric, icntl, default_cntl32);
@@ -58,7 +58,7 @@ solve!(mumps3_unsafe)
 x = similar(orig_rhs)
 get_sol!(x, mumps3_unsafe)
 finalize(mumps3_unsafe)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 @test(norm(A * x - orig_rhs) <= tol * norm(orig_rhs) * norm(A, 1))
 
 # Test convenience interface.
@@ -68,18 +68,18 @@ n3 = n * n * n
 A = convert(SparseMatrixCSC{ComplexF32, Int32}, map(ComplexF32, get_div_grad(n, n, n)))
 
 # Test with single rhs
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   println("Test single rhs on div_grad matrix")
 end
 rhs = map(ComplexF32, ones(n3) + im * ones(n3))
 
 x = solve(A, rhs, sym = mumps_unsymmetric)
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 relres = norm(A * x - rhs) / norm(rhs) / norm(A, 1)
 @test(relres <= tol)
 
 # Test with multiple rhs
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   println("Test multiple rhs on div_grad matrix")
 end
 nrhs = 5
@@ -89,7 +89,7 @@ rhs =
 
 x = solve(A, rhs, sym = mumps_unsymmetric)
 
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 relres = zeros(Float32, nrhs)
 for i = 1:nrhs
   relres[i] = norm(A * x[:, i] - rhs[:, i]) / norm(rhs[:, i]) / norm(A, 1)

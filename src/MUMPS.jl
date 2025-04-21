@@ -29,6 +29,8 @@ MUMPS has to offer.
 """
 module MUMPS
 
+const USE_SEQ = Sys.iswindows()
+export USE_SEQ # mainly for convenience, so we can use it in the test cases.
 using Libdl, LinearAlgebra, SparseArrays
 
 if haskey(ENV, "JULIA_MUMPS_LIBRARY_PATH")
@@ -39,18 +41,29 @@ if haskey(ENV, "JULIA_MUMPS_LIBRARY_PATH")
   const libzmumpspar = joinpath(ENV["JULIA_MUMPS_LIBRARY_PATH"], "libzmumps.$dlext")
   const MUMPS_INSTALLATION = "CUSTOM"
 else
-  if Sys.iswindows()
+  if USE_SEQ
+    @info("Sequential MUMPS")
     using MUMPS_seq_jll # or MUMPS_seq_MKL_jll
-    # but what about Int64's, for which i suspect should use libsmumps64?
+    import OpenBLAS32_jll
     const libsmumpspar = libsmumps
     const libdmumpspar = libdmumps
     const libcmumpspar = libcmumps
     const libzmumpspar = libzmumps
   else
+    @info("Parallel MUMPS")
     using MUMPS_jll
     using MPI
   end
   const MUMPS_INSTALLATION = "YGGDRASIL"
+end
+
+function __init__()
+  if MUMPS_INSTALLATION == "YGGDRASIL" && USE_SEQ
+    config = LinearAlgebra.BLAS.lbt_get_config()
+    if !any(lib -> lib.interface == :lp64, config.loaded_libs)
+      LinearAlgebra.BLAS.lbt_forward(OpenBLAS32_jll.libopenblas_path)
+    end
+  end
 end
 
 include("mumps_types.jl")

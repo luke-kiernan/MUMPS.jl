@@ -1,7 +1,7 @@
 using LinearAlgebra, Printf, SparseArrays
 
 using MUMPS
-if !Sys.iswindows()
+if !USE_SEQ
   import MPI
   MPI.Init()
   root = 0
@@ -12,7 +12,7 @@ end
 mumps = Mumps{Float64}(mumps_symmetric, default_icntl, default_cntl64)
 
 # Define problem on the host.
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   A = rand(4, 4)
   A = sparse(A + A')
   associate_matrix!(mumps, A)
@@ -24,11 +24,11 @@ end
 factorize!(mumps)
 solve!(mumps)
 
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 
 # By default, the solution is assembled and
 # overwrites rhs, so only exists on the host.
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   x = get_solution(mumps)
   rel_err = norm(x - A \ rhs) / norm(x)
   @printf("Error: %7.1e\n", rel_err)
@@ -40,7 +40,7 @@ finalize(mumps)
 mumps = Mumps{ComplexF64}(mumps_unsymmetric, default_icntl, default_cntl64)
 
 # Define problem on the host.
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   A = rand(4, 4) + im * rand(4, 4)
   A = sparse(A + A')
   associate_matrix!(mumps, A)
@@ -52,15 +52,15 @@ end
 factorize!(mumps)
 solve!(mumps)
 
-Sys.iswindows() || MPI.Barrier(comm)
+USE_SEQ || MPI.Barrier(comm)
 
 # By default, the solution is assembled and
 # overwrites rhs, so only exists on the host.
-if Sys.iswindows() || MPI.Comm_rank(comm) == root
+if USE_SEQ || MPI.Comm_rank(comm) == root
   x = get_solution(mumps)
   rel_err = norm(x - A \ rhs) / norm(x)
   @printf("Error: %7.1e\n", rel_err)
 end
 
 finalize(mumps)
-Sys.iswindows() || MPI.Finalize()
+USE_SEQ || MPI.Finalize()
